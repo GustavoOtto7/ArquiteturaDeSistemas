@@ -15,4 +15,10 @@ module.exports = {
     db.products[idx] = { ...db.products[idx], ...data };
     return db.products[idx];
   },
+  deleteById: (id) => {
+    const idx = db.products.findIndex(p => p.id === id);
+    if (idx === -1) return false;
+    db.products.splice(idx, 1);
+    return true;
+  },
 };

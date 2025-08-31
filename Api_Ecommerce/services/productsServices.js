@@ -15,4 +15,9 @@ module.exports = {
     if (!updated) throw createError(404, 'Product not found!');
     return updated;
   },
+  remove: (id) => {
+    const deleted = repo.deleteById(id);
+    if (!deleted) throw createError(404, 'Product not found!');
+    return { message: 'Product deleted successfully' };
+  },
 };

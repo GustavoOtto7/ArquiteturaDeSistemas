@@ -6,8 +6,7 @@ services:
     environment:
       POSTGRES_DB: ecommerce
       POSTGRES_PASSWORD: naouseadmin
-      # POSTGRES_USER: usuario_postgres
-      # POSTGRES_DB: senha_postgres
+      POSTGRES_USER: postgres
     ports:
       - "5432:5432"
     volumes:

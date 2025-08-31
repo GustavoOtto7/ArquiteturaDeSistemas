@@ -17,4 +17,8 @@ module.exports = {
   update: (req, res, next) => {
     try { res.json(service.update(req.params.id, req.body)); } catch (err) { next(err); }
   },
+  remove: (req, res, next) => {
+    try {
+      res.json(service.remove(req.params.id)); } catch (err) { next(err); }
+  },
 };
