@@ -1,10 +1,20 @@
 const service = require('../services/ordersServices');
 
 module.exports = {
-  list: (req, res, next) => {
-    try { res.json(service.list()); } catch (err) { next(err); }
+  list: async (req, res, next) => {
+    try { 
+      const orders = await service.list(); 
+      res.json(orders); 
+    } catch (err) { 
+      next(err); 
+    }
   },
-  create: (req, res, next) => {
-    try { res.status(201).json(service.create(req.body)); } catch (err) { next(err); }
+  create: async (req, res, next) => {
+    try {
+      const order = await service.create(req.body); // Chama o serviço para criar o pedido
+      res.status(201).json(order); // Retorna o pedido criado
+    } catch (err) {
+      next(err); // Passa o erro para o middleware de tratamento de erros
+    }
   },
 };

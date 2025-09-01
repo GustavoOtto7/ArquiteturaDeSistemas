@@ -1,15 +1,21 @@
-const db = require('../db/memoryDb');
-const { randomUUID } = require('crypto');
-const orders = [
-  { id: 1, items: [{ productId: 1, quantity: 2 }], total: 100 },
-  { id: 2, items: [{ productId: 2, quantity: 1 }], total: 50 },
-];
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 module.exports = {
-  findAll: () => orders,
-  create: (order) => {
-    const newOrder = { id: orders.length + 1, ...order };
-    orders.push(newOrder);
-    return newOrder;
-  },
+  findAll: () => prisma.order.findMany({ include: { items: true } }),
+  create: (order) =>
+    prisma.order.create({
+      data: {
+        total: order.total,
+        items: {
+          create: order.items.map((item) => ({
+            productId: item.productId,
+            quantity: item.quantity,
+            unitPrice: item.unitPrice,
+            subtotal: item.subtotal,
+          })),
+        },
+      },
+      include: { items: true },
+    }),
 };

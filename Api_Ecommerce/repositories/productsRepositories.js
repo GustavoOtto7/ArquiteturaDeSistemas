@@ -1,24 +1,13 @@
-const db = require('../db/memoryDb');
-const { randomUUID } = require('crypto');
+const { PrismaClient } = require('@prisma/client');
+const prisma = new PrismaClient();
 
 module.exports = {
-  findAll: () => [...db.products],
-  findById: (id) => db.products.find(p => p.id === id) || null,
-  create: ({ name, price, stock }) => {
-    const novo = { id: randomUUID(), name, price, stock };
-    db.products.push(novo);
-    return novo;
-  },
-  update: (id, data) => {
-    const idx = db.products.findIndex(p => p.id === id);
-    if (idx === -1) return null;
-    db.products[idx] = { ...db.products[idx], ...data };
-    return db.products[idx];
-  },
-  deleteById: (id) => {
-    const idx = db.products.findIndex(p => p.id === id);
-    if (idx === -1) return false;
-    db.products.splice(idx, 1);
-    return true;
-  },
+  findAll: () => prisma.product.findMany(),
+  findById: (id) => prisma.product.findUnique({ where: { id } }),
+  create: ({ name, price, stock }) =>
+    prisma.product.create({ data: { name, price, stock } }),
+  update: (id, data) =>
+    prisma.product.update({ where: { id }, data }),
+  deleteById: (id) =>
+    prisma.product.delete({ where: { id } }),
 };

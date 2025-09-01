@@ -1,22 +1,24 @@
 {
-  "name": "ecommerce-api",
+  "name": "api_ecommerce",
   "version": "1.0.0",
   "description": "",
-  "main": "memoryDB.js",
+  "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "node server.js",
+    "prisma:generate": "npx prisma generate",
+    "prisma:migrate": "npx prisma migrate dev",
+    "prisma:push": "npx prisma db push"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
-  "type": "commonjs",
   "dependencies": {
     "@prisma/client": "^6.15.0",
+    "body-parser": "^2.2.0",
     "express": "^5.1.0",
-    "uuid": "^11.1.0"
-  },
-  "devDependencies": {
+    "pg": "^8.16.3",
     "prisma": "^6.15.0"
   }
 }
