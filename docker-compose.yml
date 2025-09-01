@@ -1,0 +1,60 @@
+version: '3.9'
+
+services:
+  postgres-db:
+    image: postgres:13
+    container_name: postgres_container
+    restart: always
+    environment:
+      POSTGRES_DB: ecommerce
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_HOST_AUTH_METHOD: md5
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_db_data:/var/lib/postgresql/data
+    networks:
+      - ecommerce_network
+
+  api-ecommerce:
+    build: ./Api_Ecommerce
+    container_name: api_ecommerce_container
+    restart: always
+    environment:
+      DATABASE_URL: "postgresql://postgres:password@postgres-db:5432/ecommerce"
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres-db
+    networks:
+      - ecommerce_network
+    volumes:
+      - ./Api_Ecommerce:/app
+      - /app/node_modules
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: pgadmin4_container
+    restart: always
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@admin.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    depends_on:
+      - postgres-db
+    networks:
+      - ecommerce_network
+
+networks:
+  ecommerce_network:
+    driver: bridge
+
+volumes:
+  postgres_db_data:
+    driver: local
+  pgadmin_data:
+    driver: local
