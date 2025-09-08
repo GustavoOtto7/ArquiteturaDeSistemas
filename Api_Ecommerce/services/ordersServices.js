@@ -4,20 +4,41 @@ const { validateOrderPayload, round2 } = require('../utils/validators');
 const { createError } = require('../utils/errors');
 
 module.exports = {
-  list: () => prisma.order.findMany({ include: { items: true } }),
+  list: () => prisma.order.findMany({ 
+    where: { isDeleted: false },
+    include: { 
+      items: true, 
+      client: true, 
+      status: true 
+    } 
+  }),
   create: async (payload) => {
     validateOrderPayload(payload);
+
+    // Verifica se o cliente existe
+    const client = await prisma.client.findUnique({ 
+      where: { id: payload.clientId, isDeleted: false } 
+    });
+    if (!client) throw createError(400, 'Client not found or deleted');
 
     // Validação de estoque
     const calculated = await Promise.all(
       payload.items.map(async (it) => {
-        const product = await prisma.product.findUnique({ where: { id: it.productId } });
-        if (!product) throw createError(400, `Product ${it.productId} does not exist!`);
+        const product = await prisma.product.findUnique({ 
+          where: { id: it.productId, isDeleted: false } 
+        });
+        if (!product) throw createError(400, `Product ${it.productId} does not exist or is deleted!`);
         if (product.stock < it.quantity)
           throw createError(400, `Insufficient stock for ${product.name}`);
         return { product, quantity: it.quantity, subtotal: product.price * it.quantity };
       })
     );
+
+    // Busca status padrão (você pode criar um status "Pendente" como padrão)
+    let defaultStatus = await prisma.status.findFirst({ where: { name: 'Pendente' } });
+    if (!defaultStatus) {
+      defaultStatus = await prisma.status.create({ data: { name: 'Pendente' } });
+    }
 
     // Atualiza estoque
     await Promise.all(
@@ -40,6 +61,8 @@ module.exports = {
     const total = round2(ordersItems.reduce((acc, i) => acc + i.subtotal, 0));
     return prisma.order.create({
       data: {
+        clientId: payload.clientId,
+        statusId: defaultStatus.id,
         total,
         items: {
           create: ordersItems.map((item) => ({
@@ -50,7 +73,11 @@ module.exports = {
           })),
         },
       },
-      include: { items: true },
+      include: { 
+        items: true, 
+        client: true, 
+        status: true 
+      },
     });
   },
 };

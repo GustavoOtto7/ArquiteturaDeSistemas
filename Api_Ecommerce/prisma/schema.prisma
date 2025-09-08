@@ -9,17 +9,26 @@ datasource db {
 }
 
 model Product {
-  id     String  @id @default(uuid())
-  name   String
-  price  Float
-  stock  Int
-  orders OrderItem[]
+  id       String      @id @default(uuid())
+  name     String
+  price    Float
+  stock    Int
+  isDeleted Boolean    @default(false)
+  createdAt DateTime   @default(now())
+  orders   OrderItem[]
+  payments TypePayment[]
 }
 
 model Order {
   id        String      @id @default(uuid())
+  clientId  String
+  statusId  String
   total     Float
+  isDeleted Boolean     @default(false)
   items     OrderItem[]
+  payments  OrderPayment[]
+  client    Client      @relation(fields: [clientId], references: [id])
+  status    Status      @relation(fields: [statusId], references: [id])
   createdAt DateTime    @default(now())
 }
 
@@ -32,4 +41,36 @@ model OrderItem {
   quantity  Int
   unitPrice Float
   subtotal  Float
+}
+
+model Client {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  isDeleted Boolean  @default(false)
+  orders    Order[]
+  createdAt DateTime @default(now())
+}
+
+model Status {
+  id     String  @id @default(uuid())
+  name   String  @unique
+  orders Order[]
+}
+
+model TypePayment {
+  id       String         @id @default(uuid())
+  name     String         @unique
+  products Product[]
+  payments OrderPayment[]
+}
+
+model OrderPayment {
+  id            String      @id @default(uuid())
+  orderId       String
+  typePaymentId String
+  amount        Float
+  order         Order       @relation(fields: [orderId], references: [id])
+  typePayment   TypePayment @relation(fields: [typePaymentId], references: [id])
+  createdAt     DateTime    @default(now())
 }

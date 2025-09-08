@@ -1,19 +1,264 @@
-# Extensão REST Client para testar a API
-### Listar produtos
+# 🧪 Extensão REST Client - Testes Completos da E-commerce API
+# Para usar: Instale a extensão "REST Client" no VS Code
+
+### 🏠 Verificar se API está funcionando
+GET http://localhost:3000/
+
+### 🛍️ === PRODUTOS ===
+
+### Listar todos os produtos
 GET http://localhost:3000/products
 
-### Criar produto
+### Criar produto - Smartphone
 POST http://localhost:3000/products
 Content-Type: application/json
 
 {
-  "name": "Produto REST Client",
-  "price": 123.45,
+  "name": "Smartphone Samsung Galaxy",
+  "price": 1299.99,
+  "stock": 25
+}
+
+### Criar produto - Fone de Ouvido
+POST http://localhost:3000/products
+Content-Type: application/json
+
+{
+  "name": "Fone de Ouvido Bluetooth",
+  "price": 199.90,
+  "stock": 50
+}
+
+### Criar produto - Cabo USB
+POST http://localhost:3000/products
+Content-Type: application/json
+
+{
+  "name": "Cabo USB-C",
+  "price": 29.99,
+  "stock": 100
+}
+
+### Buscar produto por ID (substitua pelo ID real)
+GET http://localhost:3000/products/SUBSTITUIR_PELO_ID_REAL
+
+### Atualizar produto (substitua pelo ID real)
+PUT http://localhost:3000/products/SUBSTITUIR_PELO_ID_REAL
+Content-Type: application/json
+
+{
+  "name": "Smartphone Samsung Galaxy S24 Ultra",
+  "price": 1199.99,
+  "stock": 30
+}
+
+### Deletar produto (substitua pelo ID real)
+DELETE http://localhost:3000/products/SUBSTITUIR_PELO_ID_REAL
+
+### ❌ Testar produto inexistente
+GET http://localhost:3000/products/00000000-0000-0000-0000-000000000000
+
+### ❌ Criar produto com dados inválidos
+POST http://localhost:3000/products
+Content-Type: application/json
+
+{
+  "name": "",
+  "price": -10,
+  "stock": -5
+}
+
+### 🛒 === PEDIDOS ===
+
+### Listar todos os pedidos
+GET http://localhost:3000/orders
+
+### Criar pedido simples (substitua productId)
+POST http://localhost:3000/orders
+Content-Type: application/json
+
+{
+  "items": [
+    {
+      "productId": "SUBSTITUIR_PELO_ID_DO_PRODUTO",
+      "quantity": 2
+    }
+  ]
+}
+
+### Criar pedido com múltiplos itens
+POST http://localhost:3000/orders
+Content-Type: application/json
+
+{
+  "items": [
+    {
+      "productId": "PRODUTO_ID_1",
+      "quantity": 1
+    },
+    {
+      "productId": "PRODUTO_ID_2", 
+      "quantity": 3
+    }
+  ]
+}
+
+### Buscar pedido por ID (substitua pelo ID real)
+GET http://localhost:3000/orders/SUBSTITUIR_PELO_ID_REAL
+
+### ❌ Criar pedido com produto inexistente
+POST http://localhost:3000/orders
+Content-Type: application/json
+
+{
+  "items": [
+    {
+      "productId": "00000000-0000-0000-0000-000000000000",
+      "quantity": 1
+    }
+  ]
+}
+
+### ❌ Criar pedido sem itens
+POST http://localhost:3000/orders
+Content-Type: application/json
+
+{
+  "items": []
+}
+
+### ❌ Testar limite de estoque
+POST http://localhost:3000/orders
+Content-Type: application/json
+
+{
+  "items": [
+    {
+      "productId": "PRODUTO_ID_VALIDO",
+      "quantity": 999999
+    }
+  ]
+}
+
+### 🧪 === TESTES ESPECIAIS ===
+
+### Endpoint inexistente
+GET http://localhost:3000/invalid-endpoint
+
+### Método não permitido
+POST http://localhost:3000/products/123/invalid
+
+### Teste de performance - criar múltiplos produtos
+POST http://localhost:3000/products
+Content-Type: application/json
+
+{
+  "name": "Produto Teste Performance 1",
+  "price": 99.99,
   "stock": 10
 }
 
-### Buscar produto por id
-GET http://localhost:3000/products/p1
+###
+POST http://localhost:3000/products
+Content-Type: application/json
 
-### Deletar produto
-DELETE http://localhost:3000/products/p1
+{
+  "name": "Produto Teste Performance 2", 
+  "price": 149.99,
+  "stock": 20
+}
+
+###
+POST http://localhost:3000/products
+Content-Type: application/json
+
+{
+  "name": "Produto Teste Performance 3",
+  "price": 199.99,
+  "stock": 30
+}
+
+### 📝 === INSTRUÇÕES ===
+# 1. Primeiro execute "Listar todos os produtos" para ver produtos existentes
+# 2. Copie IDs reais e substitua "SUBSTITUIR_PELO_ID_REAL" nos testes
+# 3. Execute os testes na ordem para melhor resultado
+# 4. Use Ctrl+Alt+R (Windows) ou Cmd+Alt+R (Mac) para executar
+# 5. Verifique sempre se os containers Docker estão rodando
+
+### 👥 === CLIENTES ===
+
+### Listar todos os clientes
+GET http://localhost:3000/clients
+
+### Criar cliente - João Silva
+POST http://localhost:3000/clients
+Content-Type: application/json
+
+{
+  "name": "João Silva",
+  "email": "joao.silva@email.com"
+}
+
+### Criar cliente - Maria Santos
+POST http://localhost:3000/clients
+Content-Type: application/json
+
+{
+  "name": "Maria Santos",
+  "email": "maria.santos@email.com"
+}
+
+### Obter cliente específico (substitua pelo ID real)
+GET http://localhost:3000/clients/SUBSTITUIR_PELO_ID_REAL_DO_CLIENTE
+
+### Atualizar cliente (substitua pelo ID real)
+PUT http://localhost:3000/clients/SUBSTITUIR_PELO_ID_REAL_DO_CLIENTE
+Content-Type: application/json
+
+{
+  "name": "João Silva Atualizado",
+  "email": "joao.silva.novo@email.com"
+}
+
+### Deletar cliente (soft delete - substitua pelo ID real)
+DELETE http://localhost:3000/clients/SUBSTITUIR_PELO_ID_REAL_DO_CLIENTE
+
+### 📋 === PEDIDOS COM CLIENTES ===
+
+### Criar pedido com cliente (substitua pelos IDs reais)
+POST http://localhost:3000/orders
+Content-Type: application/json
+
+{
+  "clientId": "SUBSTITUIR_PELO_ID_REAL_DO_CLIENTE",
+  "items": [
+    {
+      "productId": "SUBSTITUIR_PELO_ID_REAL_DO_PRODUTO",
+      "quantity": 2
+    }
+  ]
+}
+
+### ⚙️ === SISTEMA (STATUS E TIPOS DE PAGAMENTO) ===
+
+### Listar todos os status
+GET http://localhost:3000/status
+
+### Criar novo status
+POST http://localhost:3000/status
+Content-Type: application/json
+
+{
+  "name": "Em Preparação"
+}
+
+### Listar tipos de pagamento
+GET http://localhost:3000/payment-types
+
+### Criar novo tipo de pagamento
+POST http://localhost:3000/payment-types
+Content-Type: application/json
+
+{
+  "name": "PayPal"
+}
