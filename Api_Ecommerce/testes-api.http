@@ -211,6 +211,9 @@ Content-Type: application/json
 ### Obter cliente específico (substitua pelo ID real)
 GET http://localhost:3000/clients/SUBSTITUIR_PELO_ID_REAL_DO_CLIENTE
 
+### Obter pedidos de um cliente específico (substitua pelo ID real)
+GET http://localhost:3000/clients/SUBSTITUIR_PELO_ID_REAL_DO_CLIENTE/orders
+
 ### Atualizar cliente (substitua pelo ID real)
 PUT http://localhost:3000/clients/SUBSTITUIR_PELO_ID_REAL_DO_CLIENTE
 Content-Type: application/json

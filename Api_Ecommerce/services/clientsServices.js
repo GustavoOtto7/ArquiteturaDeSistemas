@@ -30,4 +30,30 @@ module.exports = {
     if (!deleted) throw createError(404, 'Client not found!');
     return { message: 'Client deleted successfully' };
   },
+  getOrders: async (clientId) => {
+    // Verifica se o cliente existe e não está deletado
+    const client = await prisma.client.findUnique({ 
+      where: { id: clientId, isDeleted: false } 
+    });
+    if (!client) throw createError(404, 'Client not found!');
+
+    // Busca todos os pedidos do cliente
+    return prisma.order.findMany({
+      where: { 
+        clientId: clientId,
+        isDeleted: false 
+      },
+      include: {
+        items: {
+          include: {
+            product: true
+          }
+        },
+        status: true
+      },
+      orderBy: {
+        createdAt: 'desc'
+      }
+    });
+  },
 };

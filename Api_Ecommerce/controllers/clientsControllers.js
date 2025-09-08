@@ -40,4 +40,12 @@ module.exports = {
       next(err); 
     }
   },
+  getOrders: async (req, res, next) => {
+    try {
+      const orders = await service.getOrders(req.params.id);
+      res.json(orders);
+    } catch (err) {
+      next(err);
+    }
+  },
 };
