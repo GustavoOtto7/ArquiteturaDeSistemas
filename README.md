@@ -2,7 +2,7 @@
 
 API REST completa para um sistema de e-commerce
 
-## 🏗️ Arquitetura Implementada
+## Arquitetura Implementada
 
 A API segue a arquitetura apresentada no diagrama com as seguintes entidades:
 
