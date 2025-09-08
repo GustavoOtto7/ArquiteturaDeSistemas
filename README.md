@@ -192,7 +192,16 @@ GET http://localhost:3000/clients/client-uuid-here/orders
 - Recalcula totais automaticamente
 - Mantém integridade referencial
 
+<<<<<<< HEAD
 ## Relacionamentos
+=======
+- **Order** ↔ **Client** (N:1)
+- **Order** ↔ **Status** (N:1)
+- **Order** ↔ **OrderItem** (1:N)
+- **Order** ↔ **OrderPayment** (1:N
+- **OrderItem** ↔ **Product** (N:1)
+- **OrderPayment** ↔ **TypePayment** (N:1)
+>>>>>>> 4a1cc7faeddef5a38a74503b595289235671ddcc
 
 ```mermaid
 graph TD
