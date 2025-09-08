@@ -27,7 +27,7 @@ A API segue a arquitetura apresentada no diagrama com as seguintes entidades:
 ### Clientes (`/clients`)
 - `GET /clients` - Listar todos os clientes (não deletados)
 - `GET /clients/:id` - Obter cliente específico
-- `GET /clients/:id/orders` - **NOVO!** Obter pedidos de um cliente específico
+- `GET /clients/:id/orders` - Obter pedidos de um cliente específico
 - `POST /clients` - Criar novo cliente
 - `PUT /clients/:id` - Atualizar cliente
 - `DELETE /clients/:id` - Deletar cliente (soft delete)
