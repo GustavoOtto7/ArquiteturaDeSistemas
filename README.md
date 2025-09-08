@@ -122,12 +122,12 @@ Use o arquivo `testes-api.http` com a extensão REST Client do VS Code para test
 
 ##  Relacionamentos
 
-- **Order** ↔ **Client** (Many-to-One)
-- **Order** ↔ **Status** (Many-to-One)
-- **Order** ↔ **OrderItem** (One-to-Many)
-- **Order** ↔ **OrderPayment** (One-to-Many)
-- **OrderItem** ↔ **Product** (Many-to-One)
-- **OrderPayment** ↔ **TypePayment** (Many-to-One)
+- **Order** ↔ **Client** (N:1)
+- **Order** ↔ **Status** (N:1)
+- **Order** ↔ **OrderItem** (1:N)
+- **Order** ↔ **OrderPayment** (1:N
+- **OrderItem** ↔ **Product** (N:1)
+- **OrderPayment** ↔ **TypePayment** (N:1)
 
 ##  Tecnologias
 
