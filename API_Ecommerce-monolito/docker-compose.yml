@@ -1,8 +1,6 @@
-version: '3.9'
-
 services:
   postgres-db:
-    image: postgres:13
+    image: postgres:15
     container_name: postgres_container
     restart: always
     environment:
