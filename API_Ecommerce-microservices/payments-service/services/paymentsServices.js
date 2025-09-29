@@ -207,22 +207,10 @@ module.exports = {
       console.log(`Status: ${order.status}`);
       console.log('='.repeat(80));
       
-      // Aqui você poderia integrar com:
-      // - Serviço de email (SendGrid, AWS SES, etc.)
-      // - Push notifications (Firebase Cloud Messaging)
-      // - SMS (Twilio, AWS SNS)
-      // - Webhook para sistema externo
-      // - Fila de mensagens (RabbitMQ, Apache Kafka)
-      
-      // Exemplo de integração futura:
-      // await emailService.sendPaymentConfirmation(notificationData);
-      // await pushNotificationService.send(notificationData);
-      // await webhookService.notifyExternalSystems(notificationData);
-      
       return notificationData;
       
     } catch (error) {
-      console.error('❌ Erro ao enviar notificação:', error.message);
+      console.error('Erro ao enviar notificação:', error.message);
       // Não falhar o pagamento por conta da notificação
       return null;
     }
