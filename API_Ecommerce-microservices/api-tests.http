@@ -125,15 +125,11 @@ Content-Type: application/json
   "items": [
     {
       "productId": "IPHONE_PRODUCT_ID_HERE",
-      "productName": "iPhone 15 Pro Max",
-      "quantity": 1,
-      "unitPrice": 8999.99
+      "quantity": 1
     },
     {
-      "productId": "AIRPODS_PRODUCT_ID_HERE", 
-      "productName": "AirPods Pro 2",
-      "quantity": 1,
-      "unitPrice": 2499.99
+      "productId": "AIRPODS_PRODUCT_ID_HERE",
+      "quantity": 1
     }
   ]
 }
@@ -209,9 +205,7 @@ Content-Type: application/json
   "items": [
     {
       "productId": "PRODUCT_ID",
-      "productName": "Produto Teste",
-      "quantity": 1,
-      "unitPrice": 100.00
+      "quantity": 1
     }
   ]
 }
@@ -254,9 +248,7 @@ Content-Type: application/json
   "items": [
     {
       "productId": "PRODUTO_LIMITADO_ID_HERE",
-      "productName": "Produto Limitado",
-      "quantity": 2,
-      "unitPrice": 299.99
+      "quantity": 2
     }
   ]
 }
@@ -272,9 +264,7 @@ Content-Type: application/json
   "items": [
     {
       "productId": "PRODUTO_LIMITADO_ID_HERE",
-      "productName": "Produto Limitado",
-      "quantity": 1,
-      "unitPrice": 299.99
+      "quantity": 1
     }
   ]
 }
@@ -331,9 +321,7 @@ Content-Type: application/json
   "items": [
     {
       "productId": "PRODUTO_PREMIUM_ID_HERE",
-      "productName": "Produto Premium",
-      "quantity": 1,
-      "unitPrice": 5000.00
+      "quantity": 1
     }
   ]
 }
@@ -434,6 +422,16 @@ GET http://localhost:8080/payments-service/v1/payments/types
 # 7. Faça consultas individuais (seção 7)
 # 8. Verifique listagens finais (seção 8)
 #
-# NOTA: Substitua sempre os placeholders (CLIENT_ID_HERE, etc.) pelos 
-# valores reais obtidos nas respostas dos requests anteriores
+# NOTA IMPORTANTE: 
+# - Para criar pedidos, você precisa apenas do productId e quantity
+# - O sistema busca automaticamente nome e preço do Products Service
+# - Isso garante consistência e evita manipulação de preços
+# - Substitua sempre os placeholders (CLIENT_ID_HERE, etc.) pelos 
+#   valores reais obtidos nas respostas dos requests anteriores
+#
+# MUDANÇAS IMPLEMENTADAS:
+# - ✅ Pedidos agora usam apenas productId e quantity
+# - ✅ Nome e preço são buscados automaticamente
+# - ✅ Validação de estoque em tempo real
+# - ✅ Preços sempre atualizados e consistentes
 ###
