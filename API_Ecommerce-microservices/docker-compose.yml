@@ -1,0 +1,209 @@
+services:
+  # Products Database
+  products-db:
+    image: postgres:15
+    container_name: products_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: products_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_HOST_AUTH_METHOD: md5
+    ports:
+      - "5433:5432"
+    volumes:
+      - products_data:/var/lib/postgresql/data
+    networks:
+      - ecommerce_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d products_db"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Clients Database
+  clients-db:
+    image: postgres:15
+    container_name: clients_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: clients_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_HOST_AUTH_METHOD: md5
+    ports:
+      - "5434:5432"
+    volumes:
+      - clients_data:/var/lib/postgresql/data
+    networks:
+      - ecommerce_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d clients_db"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Payments Database
+  payments-db:
+    image: postgres:15
+    container_name: payments_postgres
+    restart: always
+    environment:
+      POSTGRES_DB: payments_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_HOST_AUTH_METHOD: md5
+    ports:
+      - "5435:5432"
+    volumes:
+      - payments_data:/var/lib/postgresql/data
+    networks:
+      - ecommerce_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d payments_db"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Orders Database (MongoDB)
+  orders-db:
+    image: mongo:7
+    container_name: orders_mongodb
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
+      MONGO_INITDB_DATABASE: orders_db
+    ports:
+      - "27017:27017"
+    volumes:
+      - orders_data:/data/db
+    networks:
+      - ecommerce_network
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Products Service
+  products-service:
+    build: ./products-service
+    container_name: products_service
+    restart: always
+    environment:
+      DATABASE_URL: "postgresql://postgres:password@products-db:5432/products_db"
+      PORT: 3001
+    ports:
+      - "3001:3001"
+    depends_on:
+      products-db:
+        condition: service_healthy
+    networks:
+      - ecommerce_network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3001/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Clients Service
+  clients-service:
+    build: ./clients-service
+    container_name: clients_service
+    restart: always
+    environment:
+      DATABASE_URL: "postgresql://postgres:password@clients-db:5432/clients_db"
+      PORT: 3002
+    ports:
+      - "3002:3002"
+    depends_on:
+      clients-db:
+        condition: service_healthy
+    networks:
+      - ecommerce_network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3002/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Orders Service
+  orders-service:
+    build: ./orders-service
+    container_name: orders_service
+    restart: always
+    environment:
+      MONGODB_URL: "mongodb://admin:password@orders-db:27017/orders_db?authSource=admin"
+      PORT: 3003
+      CLIENTS_SERVICE_URL: "http://clients-service:3002"
+      PRODUCTS_SERVICE_URL: "http://products-service:3001"
+    ports:
+      - "3003:3003"
+    depends_on:
+      orders-db:
+        condition: service_healthy
+      products-service:
+        condition: service_healthy
+      clients-service:
+        condition: service_healthy
+    networks:
+      - ecommerce_network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3003/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Payments Service
+  payments-service:
+    build: ./payments-service
+    container_name: payments_service
+    restart: always
+    environment:
+      DATABASE_URL: "postgresql://postgres:password@payments-db:5432/payments_db"
+      PORT: 3004
+      ORDERS_SERVICE_URL: "http://orders-service:3003"
+      CLIENTS_SERVICE_URL: "http://clients-service:3002"
+    ports:
+      - "3004:3004"
+    depends_on:
+      payments-db:
+        condition: service_healthy
+      orders-service:
+        condition: service_healthy
+      clients-service:
+        condition: service_healthy
+    networks:
+      - ecommerce_network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3004/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # API Gateway (nginx)
+  api-gateway:
+    image: nginx:alpine
+    container_name: ecommerce_gateway
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+    depends_on:
+      - products-service
+      - clients-service
+      - orders-service
+      - payments-service
+    networks:
+      - ecommerce_network
+
+volumes:
+  products_data:
+  clients_data:
+  payments_data:
+  orders_data:
+
+networks:
+  ecommerce_network:
+    driver: bridge

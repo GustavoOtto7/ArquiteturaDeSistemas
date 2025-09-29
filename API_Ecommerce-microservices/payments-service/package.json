@@ -1,0 +1,25 @@
+{
+  "name": "payments-service",
+  "version": "1.0.0",
+  "description": "Microservice for payment processing",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "prisma:generate": "npx prisma generate",
+    "prisma:migrate": "npx prisma migrate dev",
+    "prisma:push": "npx prisma db push",
+    "prisma:seed": "node prisma/seed.js"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.15.0",
+    "axios": "^1.6.0",
+    "body-parser": "^2.2.0",
+    "express": "^5.1.0",
+    "pg": "^8.16.3",
+    "prisma": "^6.15.0"
+  }
+}
