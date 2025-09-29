@@ -115,18 +115,7 @@ module.exports = {
     
     // 4. Se o pagamento foi aprovado, notificar o cliente
     if (allPaymentsSuccessful) {
-      try {
-        // Buscar informações do pedido novamente para pegar dados do cliente
-        const orderResponse = await axios.get(`${ORDERS_SERVICE_URL}/v1/orders/${orderId}`);
-        const order = orderResponse.data;
-        
-        // Aqui você poderia integrar com um serviço de notificação real
-        console.log(`[NOTIFICATION] Order ${orderId} paid and confirmed for client ${order.clientId}`);
-        
-      } catch (error) {
-        console.error('Error sending notification:', error);
-        // Não falhar o pagamento por conta da notificação
-      }
+      await module.exports.sendPaymentConfirmationNotification(orderId, order);
     }
     
     return {
@@ -177,5 +166,65 @@ module.exports = {
     return await prisma.typePayment.create({
       data: { name: name.trim() }
     });
+  },
+
+  // Função para enviar notificação de confirmação de pagamento
+  sendPaymentConfirmationNotification: async (orderId, order) => {
+    try {
+      // Buscar dados do cliente
+      const clientResponse = await axios.get(`${CLIENTS_SERVICE_URL}/v1/clients/${order.clientId}`);
+      const client = clientResponse.data;
+
+      // Preparar dados da notificação
+      const notificationData = {
+        orderId: orderId,
+        clientId: order.clientId,
+        clientName: client.name,
+        clientEmail: client.email,
+        orderTotal: order.total,
+        status: order.status,
+        timestamp: new Date().toISOString(),
+        items: order.items.map(item => ({
+          productName: item.productName,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          subtotal: item.subtotal
+        }))
+      };
+
+      // Log estruturado da notificação
+      console.log('='.repeat(80));
+      console.log(' NOTIFICAÇÃO: PAGAMENTO CONFIRMADO');
+      console.log('='.repeat(80));
+      console.log(`Cliente: ${client.name} (${client.email})`);
+      console.log(`Pedido: ${orderId}`);
+      console.log(`Valor Total: R$ ${order.total.toFixed(2)}`);
+      console.log(`Itens do Pedido:`);
+      order.items.forEach((item, index) => {
+        console.log(`   ${index + 1}. ${item.productName} - Qtd: ${item.quantity} - R$ ${item.unitPrice.toFixed(2)}`);
+      });
+      console.log(`Data/Hora: ${notificationData.timestamp}`);
+      console.log(`Status: ${order.status}`);
+      console.log('='.repeat(80));
+      
+      // Aqui você poderia integrar com:
+      // - Serviço de email (SendGrid, AWS SES, etc.)
+      // - Push notifications (Firebase Cloud Messaging)
+      // - SMS (Twilio, AWS SNS)
+      // - Webhook para sistema externo
+      // - Fila de mensagens (RabbitMQ, Apache Kafka)
+      
+      // Exemplo de integração futura:
+      // await emailService.sendPaymentConfirmation(notificationData);
+      // await pushNotificationService.send(notificationData);
+      // await webhookService.notifyExternalSystems(notificationData);
+      
+      return notificationData;
+      
+    } catch (error) {
+      console.error('❌ Erro ao enviar notificação:', error.message);
+      // Não falhar o pagamento por conta da notificação
+      return null;
+    }
   }
 };
