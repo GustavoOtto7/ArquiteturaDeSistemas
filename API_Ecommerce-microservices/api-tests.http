@@ -117,15 +117,11 @@ Content-Type: application/json
   "items": [
     {
       "productId": "IPHONE_PRODUCT_ID_HERE",
-      "productName": "iPhone 15 Pro Max",
-      "quantity": 1,
-      "unitPrice": 8999.99
+      "quantity": 1
     },
     {
-      "productId": "AIRPODS_PRODUCT_ID_HERE", 
-      "productName": "AirPods Pro 2",
-      "quantity": 1,
-      "unitPrice": 2499.99
+      "productId": "AIRPODS_PRODUCT_ID_HERE",
+      "quantity": 1
     }
   ]
 }
@@ -201,9 +197,7 @@ Content-Type: application/json
   "items": [
     {
       "productId": "PRODUCT_ID",
-      "productName": "Produto Teste",
-      "quantity": 1,
-      "unitPrice": 100.00
+      "quantity": 1
     }
   ]
 }
@@ -227,9 +221,7 @@ Content-Type: application/json
   "items": [
     {
       "productId": "PRODUTO_LIMITADO_ID_HERE",
-      "productName": "Produto Limitado",
-      "quantity": 2,
-      "unitPrice": 299.99
+      "quantity": 2
     }
   ]
 }
@@ -245,9 +237,7 @@ Content-Type: application/json
   "items": [
     {
       "productId": "PRODUTO_LIMITADO_ID_HERE",
-      "productName": "Produto Limitado",
-      "quantity": 1,
-      "unitPrice": 299.99
+      "quantity": 1
     }
   ]
 }
@@ -431,9 +421,7 @@ Content-Type: application/json
   "items": [
     {
       "productId": "PRODUTO_CARO_ID_HERE",
-      "productName": "Produto Caro",
-      "quantity": 1,
-      "unitPrice": 10000.00
+      "quantity": 1
     }
   ]
 }
