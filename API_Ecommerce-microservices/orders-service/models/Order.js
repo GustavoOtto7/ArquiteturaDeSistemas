@@ -7,7 +7,7 @@ const orderItemSchema = new mongoose.Schema({
   },
   productName: {
     type: String,
-    required: true
+    // Será preenchido automaticamente pelo serviço após buscar o produto
   },
   quantity: {
     type: Number,
@@ -16,13 +16,13 @@ const orderItemSchema = new mongoose.Schema({
   },
   unitPrice: {
     type: Number,
-    required: true,
     min: 0
+    // Será preenchido automaticamente pelo serviço após buscar o produto
   },
   subtotal: {
     type: Number,
-    required: true,
     min: 0
+    // Calculado automaticamente pelo serviço (unitPrice * quantity)
   }
 }, { _id: false });
 
