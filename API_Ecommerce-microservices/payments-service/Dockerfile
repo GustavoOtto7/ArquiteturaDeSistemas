@@ -15,5 +15,5 @@ RUN npx prisma generate
 
 EXPOSE 3004
 
-# Wait for database, generate initial migration, deploy, seed, then start
-CMD ["sh", "-c", "echo 'Waiting for database...' && sleep 10 && echo 'Generating initial migration...' && npx prisma migrate dev --name init --create-only && echo 'Applying migrations...' && npx prisma migrate deploy && echo 'Seeding database...' && npx prisma db seed && echo 'Starting server...' && npm start"]
+# Wait for database, apply migrations, seed, then start
+CMD ["sh", "-c", "echo 'Waiting for database...' && sleep 10 && echo 'Applying database schema...' && npx prisma db push && echo 'Seeding database...' && npm run prisma:seed && echo 'Starting server...' && npm start"]
