@@ -25,11 +25,6 @@ Este projeto representa a quebra do monolito de e-commerce em uma arquitetura de
    - Simulação de pagamento com Math.random()
    - Notificação de confirmação de pagamento
 
-5. **API Gateway** (Porta 8080)
-   - Ponto único de entrada
-   - Roteamento para microsserviços
-   - Load balancing com NGINX
-
 ### Status de Pedidos
 - `AGUARDANDO PAGAMENTO` (padrão)
 - `FALHA NO PAGAMENTO`
@@ -56,9 +51,6 @@ docker-compose ps
 
 ### Verificar Saúde dos Serviços
 ```bash
-# Verificar API Gateway
-curl http://localhost:8080/health
-
 # Verificar serviços individuais
 curl http://localhost:3001/health  # Products
 curl http://localhost:3002/health  # Clients  
@@ -68,40 +60,100 @@ curl http://localhost:3004/health  # Payments
 
 ## Endpoints da API
 
-### Através do API Gateway (Porta 8080)
+### Acesso Direto aos Serviços
 
-#### Products Service
-- `GET /products-service/v1/products` - Listar produtos
-- `GET /products-service/v1/products/:id` - Buscar produto
-- `POST /products-service/v1/products` - Criar produto
-- `PUT /products-service/v1/products/:id` - Atualizar produto (sem estoque)
-- `DELETE /products-service/v1/products/:id` - Deletar produto
-- `PUT /products-service/v1/products/:id/stock` - Atualizar estoque
+#### Products Service (Porta 3001)
+- `GET /v1/products` - Listar produtos
+- `GET /v1/products/:id` - Buscar produto
+- `POST /v1/products` - Criar produto
+- `PUT /v1/products/:id` - Atualizar produto (sem estoque)
+- `DELETE /v1/products/:id` - Deletar produto
+- `PUT /v1/products/:id/stock` - **Atualizar estoque (suporta incremento/decremento)**
 
-#### Clients Service
-- `GET /clients-service/v1/clients` - Listar clientes
-- `GET /clients-service/v1/clients/:id` - Buscar cliente
-- `POST /clients-service/v1/clients` - Criar cliente
-- `PUT /clients-service/v1/clients/:id` - Atualizar cliente
-- `DELETE /clients-service/v1/clients/:id` - Deletar cliente
+#### Clients Service (Porta 3002)
+- `GET /v1/clients` - Listar clientes
+- `GET /v1/clients/:id` - Buscar cliente
+- `POST /v1/clients` - Criar cliente
+- `PUT /v1/clients/:id` - Atualizar cliente
+- `DELETE /v1/clients/:id` - Deletar cliente
 
-#### Orders Service
-- `GET /order-service/v1/orders` - Listar pedidos
-- `GET /order-service/v1/orders/:id` - Buscar pedido
-- `POST /order-service/v1/orders` - Criar pedido
-- `GET /order-service/v1/orders/client/:clientId` - Pedidos por cliente
+#### Orders Service (Porta 3003)
+- `GET /v1/orders` - Listar pedidos
+- `GET /v1/orders/:id` - Buscar pedido
+- `POST /v1/orders` - Criar pedido
+- `GET /v1/orders/client/:clientId` - Pedidos por cliente
 
-#### Payments Service
-- `POST /payments-service/v1/payments/process/:orderId` - Processar pagamento
-- `GET /payments-service/v1/payments/orders/:orderId` - Buscar pagamentos do pedido
-- `GET /payments-service/v1/payments/types` - Listar tipos de pagamento
-- `POST /payments-service/v1/payments/types` - Criar tipo de pagamento
+#### Payments Service (Porta 3004)
+- `POST /v1/payments/process/:orderId` - **Processar pagamento (suporta múltiplos métodos)**
+- `GET /v1/payments/orders/:orderId` - Buscar pagamentos do pedido
+- `GET /v1/payments/types` - Listar tipos de pagamento
+- `POST /v1/payments/types` - Criar tipo de pagamento
+
+## Funcionalidades Avançadas
+
+### 🔄 Gestão Inteligente de Estoque
+O endpoint `PUT /v1/products/:id/stock` agora suporta incremento e decremento:
+
+```bash
+# Incrementar estoque (+10 unidades)
+curl -X PUT http://localhost:3001/v1/products/123/stock \
+  -H "Content-Type: application/json" \
+  -d '{"stock": 10}'
+
+# Decrementar estoque (-5 unidades)  
+curl -X PUT http://localhost:3001/v1/products/123/stock \
+  -H "Content-Type: application/json" \
+  -d '{"stock": -5}'
+```
+
+**Resposta com detalhes:**
+```json
+{
+  "id": "123",
+  "name": "Produto",
+  "price": 100.00,
+  "stock": 15,
+  "previousStock": 10,
+  "stockChange": 5,
+  "newStock": 15
+}
+```
+
+### 💳 Pagamentos Múltiplos
+O sistema suporta múltiplos métodos de pagamento em uma única transação:
+
+```bash
+curl -X POST http://localhost:3004/v1/payments/process/order-123 \
+  -H "Content-Type: application/json" \
+  -d '{
+    "payments": [
+      {
+        "typePaymentId": "cartao-credito-id",
+        "amount": 500.00
+      },
+      {
+        "typePaymentId": "pix-id", 
+        "amount": 300.00
+      },
+      {
+        "typePaymentId": "boleto-id",
+        "amount": 200.00
+      }
+    ]
+  }'
+```
+
+**Características:**
+- ✅ Múltiplos métodos por transação
+- ✅ Validação de valor total vs. valor do pedido
+- ✅ Processamento independente de cada método
+- ✅ Histórico completo de pagamentos
 
 ## Exemplos de Uso
 
 ### 1. Criar Cliente
 ```bash
-curl -X POST http://localhost:8080/clients-service/v1/clients \
+curl -X POST http://localhost:3002/v1/clients \
   -H "Content-Type: application/json" \
   -d '{
     "name": "João Silva",
@@ -111,7 +163,7 @@ curl -X POST http://localhost:8080/clients-service/v1/clients \
 
 ### 2. Criar Produto
 ```bash
-curl -X POST http://localhost:8080/products-service/v1/products \
+curl -X POST http://localhost:3001/v1/products \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Notebook",
@@ -122,7 +174,7 @@ curl -X POST http://localhost:8080/products-service/v1/products \
 
 ### 3. Criar Pedido
 ```bash
-curl -X POST http://localhost:8080/order-service/v1/orders \
+curl -X POST http://localhost:3003/v1/orders \
   -H "Content-Type: application/json" \
   -d '{
     "clientId": "uuid-do-cliente",
@@ -137,7 +189,7 @@ curl -X POST http://localhost:8080/order-service/v1/orders \
 
 ### 4. Processar Pagamento
 ```bash
-curl -X POST http://localhost:8080/payments-service/v1/payments/process/uuid-do-pedido \
+curl -X POST http://localhost:3004/v1/payments/process/uuid-do-pedido \
   -H "Content-Type: application/json" \
   -d '{
     "payments": [{
@@ -200,7 +252,6 @@ docker-compose logs -f products-service
 ## Monitoramento
 
 ### Verificar Status
-- API Gateway: http://localhost:8080/health
 - Products Service: http://localhost:3001/health
 - Clients Service: http://localhost:3002/health
 - Orders Service: http://localhost:3003/health

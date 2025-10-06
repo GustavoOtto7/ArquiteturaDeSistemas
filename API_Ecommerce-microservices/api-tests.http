@@ -5,10 +5,6 @@
 ### 1. HEALTH CHECKS - Verificação de saúde dos serviços
 ### =================================================================
 
-# API Gateway
-GET http://localhost:8080/health
-###
-
 # Products Service 
 GET http://localhost:3001/health
 ###
@@ -30,7 +26,7 @@ GET http://localhost:3004/health
 ### =================================================================
 
 # Criar tipo de pagamento: Cartão de Crédito
-POST http://localhost:8080/payments-service/v1/payments/types
+POST http://localhost:3004/v1/payments/types
 Content-Type: application/json
 
 {
@@ -40,7 +36,7 @@ Content-Type: application/json
 ###
 
 # Criar tipo de pagamento: PIX
-POST http://localhost:8080/payments-service/v1/payments/types
+POST http://localhost:3004/v1/payments/types
 Content-Type: application/json
 
 {
@@ -50,7 +46,7 @@ Content-Type: application/json
 ###
 
 # Criar tipo de pagamento: Boleto
-POST http://localhost:8080/payments-service/v1/payments/types
+POST http://localhost:3004/v1/payments/types
 Content-Type: application/json
 
 {
@@ -60,15 +56,11 @@ Content-Type: application/json
 ###
 
 # Listar tipos de pagamento
-GET http://localhost:8080/payments-service/v1/payments/types
+GET http://localhost:3004/v1/payments/types
 ###
 
-### =================================================================
-### 3. FLUXO HAPPY PATH - Cenário de sucesso completo
-### =================================================================
-
 # 3.1 Criar cliente válido
-POST http://localhost:8080/clients-service/v1/clients
+POST http://localhost:3002/v1/clients
 Content-Type: application/json
 
 {
@@ -79,7 +71,7 @@ Content-Type: application/json
 ###
 
 # 3.2 Criar produtos
-POST http://localhost:8080/products-service/v1/products
+POST http://localhost:3001/v1/products
 Content-Type: application/json
 
 {
@@ -90,7 +82,7 @@ Content-Type: application/json
 
 ###
 
-POST http://localhost:8080/products-service/v1/products
+POST http://localhost:3001/v1/products
 Content-Type: application/json
 
 {
@@ -101,7 +93,7 @@ Content-Type: application/json
 
 ###
 
-POST http://localhost:8080/products-service/v1/products
+POST http://localhost:3001/v1/products
 Content-Type: application/json
 
 {
@@ -113,11 +105,11 @@ Content-Type: application/json
 ###
 
 # 3.3 Listar produtos
-GET http://localhost:8080/products-service/v1/products
+GET http://localhost:3001/v1/products
 ###
 
 # 3.4 Criar pedido com múltiplos produtos (substitua IDs)
-POST http://localhost:8080/order-service/v1/orders
+POST http://localhost:3003/v1/orders
 Content-Type: application/json
 
 {
@@ -141,11 +133,11 @@ Content-Type: application/json
 ###
 
 # 3.5 Listar pedidos
-GET http://localhost:8080/order-service/v1/orders
+GET http://localhost:3003/v1/orders
 ###
 
 # 3.6 Processar pagamento único (substitua IDs)
-POST http://localhost:8080/payments-service/v1/payments/process/ORDER_ID_HERE
+POST http://localhost:3004/v1/payments/process/ORDER_ID_HERE
 Content-Type: application/json
 
 {
@@ -159,16 +151,16 @@ Content-Type: application/json
 
 ###
 
-# 3.7 Verificar pagamentos do pedido
-GET http://localhost:8080/payments-service/v1/payments/orders/ORDER_ID_HERE
+# Verificar pagamentos do pedido
+GET http://localhost:3004/v1/payments/orders/ORDER_ID_HERE
 ###
 
 ### =================================================================
-### 4. TESTES DE VALIDAÇÃO - Casos que devem falhar
+### TESTES DE VALIDAÇÃO
 ### =================================================================
 
-# 4.1 Cliente sem nome (deve falhar)
-POST http://localhost:8080/clients-service/v1/clients
+# Cliente sem nome (deve falhar)
+POST http://localhost:3002/v1/clients
 Content-Type: application/json
 
 {
@@ -177,8 +169,8 @@ Content-Type: application/json
 
 ###
 
-# 4.2 Cliente com email inválido (deve falhar)
-POST http://localhost:8080/clients-service/v1/clients
+# Cliente com email inválido (deve falhar)
+POST http://localhost:3002/v1/clients
 Content-Type: application/json
 
 {
@@ -188,8 +180,8 @@ Content-Type: application/json
 
 ###
 
-# 4.3 Produto com preço negativo (deve falhar)
-POST http://localhost:8080/products-service/v1/products
+# Produto com preço negativo (deve falhar)
+POST http://localhost:3001/v1/products
 Content-Type: application/json
 
 {
@@ -200,8 +192,8 @@ Content-Type: application/json
 
 ###
 
-# 4.4 Pedido com cliente inexistente (deve falhar)
-POST http://localhost:8080/order-service/v1/orders
+# Pedido com cliente inexistente (deve falhar)
+POST http://localhost:3003/v1/orders
 Content-Type: application/json
 
 {
@@ -216,14 +208,8 @@ Content-Type: application/json
   ]
 }
 
-###
-
-### =================================================================
-### 5. GESTÃO DE ESTOQUE
-### =================================================================
-
-# 5.1 Criar produto com estoque limitado
-POST http://localhost:8080/products-service/v1/products
+# Criar produto com estoque limitado
+POST http://localhost:3001/v1/products
 Content-Type: application/json
 
 {
@@ -232,21 +218,8 @@ Content-Type: application/json
   "stock": 2
 }
 
-###
-
-# 5.2 Criar cliente para teste de estoque
-POST http://localhost:8080/clients-service/v1/clients
-Content-Type: application/json
-
-{
-  "name": "Cliente Estoque",
-  "email": "cliente.estoque@email.com"
-}
-
-###
-
-# 5.3 Pedido que esgota estoque (substitua IDs)
-POST http://localhost:8080/order-service/v1/orders
+# Pedido que esgota estoque (substitua IDs)
+POST http://localhost:3003/v1/orders
 Content-Type: application/json
 
 {
@@ -263,8 +236,8 @@ Content-Type: application/json
 
 ###
 
-# 5.4 Tentar outro pedido (deve falhar - sem estoque)
-POST http://localhost:8080/order-service/v1/orders
+# Tentar outro pedido (deve falhar - sem estoque)
+POST http://localhost:3003/v1/orders
 Content-Type: application/json
 
 {
@@ -281,12 +254,12 @@ Content-Type: application/json
 
 ###
 
-# 5.5 Verificar estoque atual
-GET http://localhost:8080/products-service/v1/products/PRODUTO_LIMITADO_ID_HERE
+# Verificar estoque atual
+GET http://localhost:3001/v1/products/PRODUTO_LIMITADO_ID_HERE
 ###
 
-# 5.6 Repor estoque
-PUT http://localhost:8080/products-service/v1/products/PRODUTO_LIMITADO_ID_HERE/stock
+# Repor estoque
+PUT http://localhost:3001/v1/products/PRODUTO_LIMITADO_ID_HERE/stock
 Content-Type: application/json
 
 {
@@ -296,11 +269,11 @@ Content-Type: application/json
 ###
 
 ### =================================================================
-### 6. PAGAMENTOS MÚLTIPLOS
+### PAGAMENTOS MÚLTIPLOS
 ### =================================================================
 
-# 6.1 Criar cliente para pagamentos
-POST http://localhost:8080/clients-service/v1/clients
+# Criar cliente para pagamentos
+POST http://localhost:3002/v1/clients
 Content-Type: application/json
 
 {
@@ -310,38 +283,8 @@ Content-Type: application/json
 
 ###
 
-# 6.2 Criar produto premium
-POST http://localhost:8080/products-service/v1/products
-Content-Type: application/json
-
-{
-  "name": "Produto Premium",
-  "price": 5000.00,
-  "stock": 5
-}
-
-###
-
-# 6.3 Criar pedido premium (substitua IDs)
-POST http://localhost:8080/order-service/v1/orders
-Content-Type: application/json
-
-{
-  "clientId": "CLIENT_PAGAMENTO_ID_HERE",
-  "items": [
-    {
-      "productId": "PRODUTO_PREMIUM_ID_HERE",
-      "productName": "Produto Premium",
-      "quantity": 1,
-      "unitPrice": 5000.00
-    }
-  ]
-}
-
-###
-
-# 6.4 Pagamento parcial - 50% Cartão (substitua IDs)
-POST http://localhost:8080/payments-service/v1/payments/process/ORDER_PREMIUM_ID_HERE
+# Pagamento parcial - 50% Cartão (substitua IDs)
+POST http://localhost:3004/v1/payments/process/ORDER_PREMIUM_ID_HERE
 Content-Type: application/json
 
 {
@@ -355,8 +298,8 @@ Content-Type: application/json
 
 ###
 
-# 6.5 Completar pagamento - 50% PIX (substitua IDs)
-POST http://localhost:8080/payments-service/v1/payments/process/ORDER_PREMIUM_ID_HERE
+# Completar pagamento - 50% PIX (substitua IDs)
+POST http://localhost:3004/v1/payments/process/ORDER_PREMIUM_ID_HERE
 Content-Type: application/json
 
 {
@@ -370,70 +313,210 @@ Content-Type: application/json
 
 ###
 
-# 6.6 Verificar todos os pagamentos
-GET http://localhost:8080/payments-service/v1/payments/orders/ORDER_PREMIUM_ID_HERE
+# Verificar todos os pagamentos
+GET http://localhost:3004/v1/payments/orders/ORDER_PREMIUM_ID_HERE
 ###
 
 ### =================================================================
-### 7. CONSULTAS E BUSCA INDIVIDUAL
+### CONSULTAS E BUSCA INDIVIDUAL
 ### =================================================================
 
-# 7.1 Buscar cliente específico
-GET http://localhost:8080/clients-service/v1/clients/CLIENT_ID_HERE
+# Buscar cliente específico
+GET http://localhost:3002/v1/clients/CLIENT_ID_HERE
 ###
 
-# 7.2 Buscar produto específico
-GET http://localhost:8080/products-service/v1/products/PRODUCT_ID_HERE
+# Buscar produto específico
+GET http://localhost:3001/v1/products/PRODUCT_ID_HERE
 ###
 
-# 7.3 Buscar pedido específico
-GET http://localhost:8080/order-service/v1/orders/ORDER_ID_HERE
+# Buscar pedido específico
+GET http://localhost:3003/v1/orders/ORDER_ID_HERE
 ###
 
-# 7.4 Buscar pedidos por cliente
-GET http://localhost:8080/order-service/v1/orders/client/CLIENT_ID_HERE
+# Buscar pedidos por cliente
+GET http://localhost:3003/v1/orders/client/CLIENT_ID_HERE
 ###
 
-# 7.5 Buscar recursos inexistentes (devem retornar 404)
-GET http://localhost:8080/clients-service/v1/clients/cliente-inexistente
+# Buscar recursos inexistentes (devem retornar 404)
+GET http://localhost:3002/v1/clients/cliente-inexistente
 ###
-GET http://localhost:8080/products-service/v1/products/produto-inexistente
+GET http://localhost:3001/v1/products/produto-inexistente
 ###
-GET http://localhost:8080/order-service/v1/orders/pedido-inexistente
+GET http://localhost:3003/v1/orders/pedido-inexistente
 ###
 
 ### =================================================================
-### 8. LISTAGEM COMPLETA - Verificação final
+### NOVAS FUNCIONALIDADES - 
+### =================================================================
+
+# Gestão Avançada de Estoque - Incrementar/Decrementar
+
+# Criar produto para teste de estoque
+POST http://localhost:3001/v1/products
+Content-Type: application/json
+
+{
+  "name": "Produto Gestão Estoque",
+  "price": 199.99,
+  "stock": 50
+}
+
+###
+
+# Incrementar estoque (+20 unidades)
+PUT http://localhost:3001/v1/products/PRODUTO_GESTAO_ID_HERE/stock
+Content-Type: application/json
+
+{
+  "stock": 20
+}
+
+###
+
+# Decrementar estoque (-5 unidades)
+PUT http://localhost:3001/v1/products/PRODUTO_GESTAO_ID_HERE/stock
+Content-Type: application/json
+
+{
+  "stock": -5
+}
+
+###
+
+# Verificar estoque após operações
+GET http://localhost:3001/v1/products/PRODUTO_ID_HERE
+###
+
+# Tentar decrementar mais que disponível (deve falhar)
+PUT http://localhost:3001/v1/products/PRODUTO_ID_HERE/stock
+Content-Type: application/json
+
+{
+  "stock": -100
+}
+
+###
+
+# Pagamentos Múltiplos - Vários métodos por transação
+
+# Criar cliente para pagamentos múltiplos
+POST http://localhost:3002/v1/clients
+Content-Type: application/json
+
+{
+  "name": "Cliente Pagamentos Múltiplos",
+  "email": "multiplos@email.com"
+}
+
+###
+
+# Criar produto caro para demonstrar pagamentos múltiplos
+POST http://localhost:3001/v1/products
+Content-Type: application/json
+
+{
+  "name": "Produto Caro",
+  "price": 10000.00,
+  "stock": 3
+}
+
+###
+
+# Criar pedido caro (substitua IDs)
+POST http://localhost:3003/v1/orders
+Content-Type: application/json
+
+{
+  "clientId": "CLIENT_MULTIPLOS_ID_HERE",
+  "items": [
+    {
+      "productId": "PRODUTO_CARO_ID_HERE",
+      "productName": "Produto Caro",
+      "quantity": 1,
+      "unitPrice": 10000.00
+    }
+  ]
+}
+
+###
+
+# Pagamento com MÚLTIPLOS métodos (substitua IDs)
+POST http://localhost:3004/v1/payments/process/ORDER_CARO_ID_HERE
+Content-Type: application/json
+
+{
+  "payments": [
+    {
+      "typePaymentId": "CARTAO_CREDITO_ID_HERE",
+      "amount": 4000.00
+    },
+    {
+      "typePaymentId": "PIX_ID_HERE", 
+      "amount": 3000.00
+    },
+    {
+      "typePaymentId": "BOLETO_ID_HERE",
+      "amount": 3000.00
+    }
+  ]
+}
+
+###
+
+# Verificar todos os pagamentos do pedido
+GET http://localhost:3004/v1/payments/orders/ORDER_CARO_ID_HERE
+###
+
+# Pagamento Parcial Seguido de Complementar
+
+# Primeiro pagamento parcial - 60% do valor
+POST http://localhost:3004/v1/payments/process/ORDER_CARO_ID_HERE
+Content-Type: application/json
+
+{
+  "payments": [
+    {
+      "typePaymentId": "CARTAO_CREDITO_ID_HERE",
+      "amount": 6000.00
+    }
+  ]
+}
+
+###
+
+# Complementar pagamento - 40% restante
+POST http://localhost:3004/v1/payments/process/ORDER_CARO_ID_HERE
+Content-Type: application/json
+
+{
+  "payments": [
+    {
+      "typePaymentId": "PIX_ID_HERE",
+      "amount": 4000.00
+    }
+  ]
+}
+
+###
+
+### =================================================================
+### LISTAGEM COMPLETA - Verificação final
 ### =================================================================
 
 # Listar todos os clientes criados
-GET http://localhost:8080/clients-service/v1/clients
+GET http://localhost:3002/v1/clients
 ###
 
 # Listar todos os produtos criados  
-GET http://localhost:8080/products-service/v1/products
+GET http://localhost:3001/v1/products
 ###
 
 # Listar todos os pedidos criados
-GET http://localhost:8080/order-service/v1/orders
+GET http://localhost:3003/v1/orders
 ###
 
 # Listar todos os tipos de pagamento
-GET http://localhost:8080/payments-service/v1/payments/types
+GET http://localhost:3004/v1/payments/types
 ###
 
-### =================================================================
-### INSTRUÇÕES DE USO:
-### =================================================================
-# 1. Execute os health checks primeiro (seção 1)
-# 2. Crie os tipos de pagamento (seção 2)  
-# 3. Execute o fluxo happy path (seção 3) - substitua IDs pelos valores reais
-# 4. Teste validações (seção 4) - observe erros esperados
-# 5. Teste gestão de estoque (seção 5)
-# 6. Teste pagamentos múltiplos (seção 6)
-# 7. Faça consultas individuais (seção 7)
-# 8. Verifique listagens finais (seção 8)
-#
-# NOTA: Substitua sempre os placeholders (CLIENT_ID_HERE, etc.) pelos 
-# valores reais obtidos nas respostas dos requests anteriores
-###
+

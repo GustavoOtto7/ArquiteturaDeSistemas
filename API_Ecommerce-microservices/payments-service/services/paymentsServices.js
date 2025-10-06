@@ -37,7 +37,7 @@ module.exports = {
     }
 
     // Validar se o valor total dos pagamentos não excede o total do pedido
-    const existingPayments = await prisma.payment.findMany({
+    const existingPayments = await prisma.orderPayment.findMany({
       where: { orderId: orderId }
     });
     
@@ -181,8 +181,21 @@ module.exports = {
       throw createError(400, 'Payment type name is required');
     }
     
-    return await prisma.typePayment.create({
-      data: { name: name.trim() }
-    });
+    try {
+      return await prisma.typePayment.create({
+        data: { name: name.trim() }
+      });
+    } catch (error) {
+      // Verifica se é erro de constraint unique
+      if (error.code === 'P2002') {
+        const field = error.meta?.target?.[0];
+        if (field === 'name') {
+          throw createError(409, 'Já existe um tipo de pagamento com esse nome');
+        }
+        throw createError(409, 'Dados duplicados encontrados');
+      }
+      // Re-lança outros erros
+      throw error;
+    }
   }
 };

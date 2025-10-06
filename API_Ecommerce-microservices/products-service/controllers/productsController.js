@@ -44,8 +44,8 @@ module.exports = {
   updateStock: async (req, res, next) => {
     try {
       const { stock } = req.body;
-      if (stock === undefined || stock < 0) {
-        return res.status(400).json({ erro: 'Stock must be a valid positive number' });
+      if (stock === undefined || typeof stock !== 'number') {
+        return res.status(400).json({ erro: 'Stock must be a valid number (use negative values to decrement)' });
       }
       
       const product = await service.updateStock(req.params.id, stock);
