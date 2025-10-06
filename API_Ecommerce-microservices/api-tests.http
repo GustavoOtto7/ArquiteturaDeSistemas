@@ -70,6 +70,11 @@ Content-Type: application/json
 
 ###
 
+###
+GET http://localhost:3002/v1/clients
+
+###
+
 # 3.2 Criar produtos
 POST http://localhost:3001/v1/products
 Content-Type: application/json
@@ -113,14 +118,10 @@ POST http://localhost:3003/v1/orders
 Content-Type: application/json
 
 {
-  "clientId": "CLIENT_ID_HERE",
+  "clientId": "66fc2c1a-da33-4bbf-a6bf-229ee8ef9f56",
   "items": [
     {
-      "productId": "IPHONE_PRODUCT_ID_HERE",
-      "quantity": 1
-    },
-    {
-      "productId": "AIRPODS_PRODUCT_ID_HERE",
+      "productId": "8a804b08-f8cf-424c-88e4-40f13f053298",
       "quantity": 1
     }
   ]
