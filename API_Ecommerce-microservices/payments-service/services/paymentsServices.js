@@ -106,7 +106,12 @@ module.exports = {
     // 3. Atualizar status do pedido baseado no resultado dos pagamentos
     let newOrderStatus;
     if (allPaymentsSuccessful) {
-      newOrderStatus = 'PAGO';
+      // Verificar se o total pago cobre o valor do pedido
+      if (totalAllPayments >= order.total) {
+        newOrderStatus = 'PAGO';
+      } else {
+        newOrderStatus = 'AGUARDANDO PAGAMENTO'; // Pagamento parcial bem-sucedido
+      }
     } else {
       newOrderStatus = 'CANCELADO';
     }
@@ -136,15 +141,26 @@ module.exports = {
       }
     }
     
+    // Determinar mensagem baseada no status
+    let message;
+    if (!allPaymentsSuccessful) {
+      message = 'Payment failed - order has been cancelled';
+    } else if (totalAllPayments >= order.total) {
+      message = 'Payment processed successfully and order confirmed';
+    } else {
+      message = `Partial payment processed. Paid: ${totalAllPayments}, Remaining: ${order.total - totalAllPayments}`;
+    }
+    
     return {
       orderId,
       status: newOrderStatus,
       payments: paymentResults,
       totalAmount: payments.reduce((sum, p) => sum + p.amount, 0),
-      success: allPaymentsSuccessful,
-      message: allPaymentsSuccessful 
-        ? 'Payment processed successfully and order confirmed'
-        : 'Payment failed - order has been cancelled'
+      totalPaid: totalAllPayments,
+      orderTotal: order.total,
+      remainingAmount: order.total - totalAllPayments,
+      success: allPaymentsSuccessful && totalAllPayments >= order.total,
+      message
     };
   },
   
