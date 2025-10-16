@@ -9,9 +9,9 @@ const PRODUCTS_SERVICE_URL = process.env.PRODUCTS_SERVICE_URL || 'http://localho
 module.exports = {
   list: () => Order.find({ isDeleted: false }),
   obtain: (id) => Order.findOne({ _id: id, isDeleted: false }),
-  create: async (payload) => {
+  create: async (payload, payments) => {
     validateOrderPayload(payload);
-    
+
     // 1. Validar cliente
     try {
       const clientResponse = await axios.get(`${CLIENTS_SERVICE_URL}/v1/clients/${payload.clientId}/validate`);
@@ -24,27 +24,27 @@ module.exports = {
       }
       throw createError(500, 'Error validating client');
     }
-    
-    // 2. Enriquecer itens com dados dos produtos e validar estoque
+
+    // 2. Buscar informações dos produtos e validar estoque
     const enrichedItems = [];
     let total = 0;
-    
-    for (const item of payload.items) {
-      try {
-        // Buscar dados do produto
+
+    try {
+      for (const item of payload.items) {
+        // Buscar informações do produto
         const productResponse = await axios.get(`${PRODUCTS_SERVICE_URL}/v1/products/${item.productId}`);
         const product = productResponse.data;
-        
+
         if (!product) {
           throw createError(404, `Product ${item.productId} not found`);
         }
-        
+
         // Verificar estoque
         if (product.stock < item.quantity) {
-          throw createError(400, `Insufficient stock for product '${product.name}'. Available: ${product.stock}, Required: ${item.quantity}`);
+          throw createError(400, `Insufficient stock for product ${product.name}. Available: ${product.stock}, Required: ${item.quantity}`);
         }
-        
-        // Criar item enriquecido com dados reais do produto
+
+        // Criar item enriquecido com informações do produto
         const enrichedItem = {
           productId: item.productId,
           productName: product.name,
@@ -52,28 +52,29 @@ module.exports = {
           unitPrice: product.price,
           subtotal: product.price * item.quantity
         };
-        
+
         enrichedItems.push(enrichedItem);
         total += enrichedItem.subtotal;
-        
-      } catch (error) {
-        if (error.response?.status === 404) {
-          throw createError(404, `Product ${item.productId} not found`);
-        }
-        if (error.status) throw error; // Re-throw our custom errors
-        throw createError(500, `Error validating product ${item.productId}`);
       }
+    } catch (error) {
+      if (error.status) throw error; // Re-throw our custom errors
+      if (error.response?.status === 404) {
+        throw createError(404, 'Product not found');
+      }
+      throw createError(500, 'Error fetching product information');
     }
-    
+
     // 3. Reservar estoque dos produtos
     try {
-      const stockResponse = await axios.post(`${PRODUCTS_SERVICE_URL}/v1/products/check-stock`, {
+      const stockCheckPayload = {
         products: enrichedItems.map(item => ({
           productId: item.productId,
           quantity: item.quantity
         }))
-      });
-      
+      };
+
+      const stockResponse = await axios.post(`${PRODUCTS_SERVICE_URL}/v1/products/check-stock`, stockCheckPayload);
+
       if (!stockResponse.data.success) {
         throw createError(400, stockResponse.data.erro || 'Error reserving stock');
       }
@@ -84,7 +85,7 @@ module.exports = {
       }
       throw createError(500, 'Error checking stock');
     }
-    
+
     // 4. Criar o pedido com os itens enriquecidos
     const orderData = {
       clientId: payload.clientId,
@@ -92,9 +93,26 @@ module.exports = {
       total,
       items: enrichedItems
     };
-    
+
     const order = new Order(orderData);
-    return await order.save();
+    const savedOrder = await order.save();
+
+    // 5. Se houver pagamentos, processar via payments-service
+    if (payments && Array.isArray(payments) && payments.length > 0) {
+      try {
+        // O payments-service espera: { payments: [{typePaymentId, amount}] }
+        const paymentsServiceUrl = process.env.PAYMENTS_SERVICE_URL || 'http://payments-service:3004';
+        const response = await axios.post(`${paymentsServiceUrl}/v1/payments/${savedOrder._id}/process`, { payments });
+        // Opcional: atualizar status do pedido localmente se necessário
+        // return { order: savedOrder, paymentResult: response.data };
+        // Para manter compatibilidade, retorna só o pedido
+      } catch (error) {
+        // Não impede a criação do pedido, mas loga o erro
+        console.error('Erro ao processar pagamento inicial:', error.response?.data || error.message);
+      }
+    }
+
+    return savedOrder;
   },
   
   getOrdersByClient: async (clientId) => {

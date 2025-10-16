@@ -10,8 +10,10 @@ RUN npm install
 
 COPY . .
 
+# Generate Prisma client based on schema
 RUN npx prisma generate
 
 EXPOSE 3001
 
-CMD ["sh", "-c", "npx prisma migrate deploy && npm start"]
+# Wait for database, apply migrations, seed, then start
+CMD ["sh", "-c", "echo 'Waiting for database...' && sleep 10 && echo 'Applying database schema...' && npx prisma db push && echo 'Seeding database...' && npm run prisma:seed && echo 'Starting server...' && npm start"]

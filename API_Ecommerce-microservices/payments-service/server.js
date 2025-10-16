@@ -18,6 +18,12 @@ app.get('/', (req, res) => res.send('Payments Service - Use /v1/payments to inte
 
 app.use((err, req, res, next) => {
   console.error(err);
+  
+  // Trata erros de JSON malformado
+  if (err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    return res.status(400).json({ erro: 'Dados JSON inválidos' });
+  }
+  
   res.status(err.status || 500).json({ erro: err.message || 'Internal Error!' });
 });
 

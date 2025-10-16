@@ -1,3 +1,19 @@
+  # Notification Service
+  notification-service:
+    build: ./notification-service
+    container_name: notification_service
+    restart: always
+    environment:
+      PORT: 3005
+    ports:
+      - "3005:3005"
+    networks:
+      - ecommerce_network
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3005/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 services:
   # Products Database
   products-db:
@@ -181,22 +197,6 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
-
-  # API Gateway (nginx)
-  api-gateway:
-    image: nginx:alpine
-    container_name: ecommerce_gateway
-    ports:
-      - "8080:80"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
-    depends_on:
-      - products-service
-      - clients-service
-      - orders-service
-      - payments-service
-    networks:
-      - ecommerce_network
 
 volumes:
   products_data:

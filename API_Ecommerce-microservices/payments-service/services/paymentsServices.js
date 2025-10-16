@@ -35,11 +35,18 @@ module.exports = {
       if (error.status) throw error; // Re-throw our custom errors
       throw createError(500, 'Error validating order');
     }
+
+    // Validar se o valor total dos pagamentos não excede o total do pedido
+    const existingPayments = await prisma.orderPayment.findMany({
+      where: { orderId: orderId }
+    });
     
-    // Simplificado: assumir que não há pagamentos prévios por enquanto
+    const totalExistingPayments = existingPayments.reduce((sum, p) => sum + p.amount, 0);
     const totalNewPayments = payments.reduce((sum, p) => sum + p.amount, 0);
-    if (totalNewPayments > order.total) {
-      throw createError(400, `Payment amount (${totalNewPayments}) exceeds order total (${order.total})`);
+    const totalAllPayments = totalExistingPayments + totalNewPayments;
+    
+    if (totalAllPayments > order.total) {
+      throw createError(400, `Total payment amount (${totalAllPayments}) exceeds order total (${order.total})`);
     }
     
     // 2. Validar pagamentos antes de processar
@@ -99,7 +106,12 @@ module.exports = {
     // 3. Atualizar status do pedido baseado no resultado dos pagamentos
     let newOrderStatus;
     if (allPaymentsSuccessful) {
-      newOrderStatus = 'PAGO';
+      // Verificar se o total pago cobre o valor do pedido
+      if (totalAllPayments >= order.total) {
+        newOrderStatus = 'PAGO';
+      } else {
+        newOrderStatus = 'AGUARDANDO PAGAMENTO'; // Pagamento parcial bem-sucedido
+      }
     } else {
       newOrderStatus = 'CANCELADO';
     }
@@ -113,9 +125,34 @@ module.exports = {
       throw createError(500, 'Payment processed but failed to update order status');
     }
     
-    // 4. Se o pagamento foi aprovado, notificar o cliente
-    if (allPaymentsSuccessful) {
-      await module.exports.sendPaymentConfirmationNotification(orderId, order);
+    // 4. Se o pagamento foi aprovado e o pedido está totalmente pago, notificar o cliente
+    if (allPaymentsSuccessful && totalAllPayments >= order.total) {
+      try {
+        // Buscar informações do pedido novamente para pegar dados do cliente
+        const orderResponse = await axios.get(`${ORDERS_SERVICE_URL}/v1/orders/${orderId}`);
+        const order = orderResponse.data;
+
+        // Chamar notification-service
+        const notificationServiceUrl = process.env.NOTIFICATION_SERVICE_URL || 'http://notification-service:3005';
+        await axios.post(`${notificationServiceUrl}/v1/notifications`, {
+          clientId: order.clientId,
+          title: 'Pagamento confirmado',
+          message: `Seu pedido ${orderId} foi totalmente pago e está confirmado!`
+        });
+      } catch (error) {
+        console.error('Error sending notification:', error.response?.data || error.message);
+        // Não falhar o pagamento por conta da notificação
+      }
+    }
+    
+    // Determinar mensagem baseada no status
+    let message;
+    if (!allPaymentsSuccessful) {
+      message = 'Payment failed - order has been cancelled';
+    } else if (totalAllPayments >= order.total) {
+      message = 'Payment processed successfully and order confirmed';
+    } else {
+      message = `Partial payment processed. Paid: ${totalAllPayments}, Remaining: ${order.total - totalAllPayments}`;
     }
     
     return {
@@ -123,10 +160,11 @@ module.exports = {
       status: newOrderStatus,
       payments: paymentResults,
       totalAmount: payments.reduce((sum, p) => sum + p.amount, 0),
-      success: allPaymentsSuccessful,
-      message: allPaymentsSuccessful 
-        ? 'Payment processed successfully and order confirmed'
-        : 'Payment failed - order has been cancelled'
+      totalPaid: totalAllPayments,
+      orderTotal: order.total,
+      remainingAmount: order.total - totalAllPayments,
+      success: allPaymentsSuccessful && totalAllPayments >= order.total,
+      message
     };
   },
   
@@ -163,56 +201,21 @@ module.exports = {
       throw createError(400, 'Payment type name is required');
     }
     
-    return await prisma.typePayment.create({
-      data: { name: name.trim() }
-    });
-  },
-
-  // Função para enviar notificação de confirmação de pagamento
-  sendPaymentConfirmationNotification: async (orderId, order) => {
     try {
-      // Buscar dados do cliente
-      const clientResponse = await axios.get(`${CLIENTS_SERVICE_URL}/v1/clients/${order.clientId}`);
-      const client = clientResponse.data;
-
-      // Preparar dados da notificação
-      const notificationData = {
-        orderId: orderId,
-        clientId: order.clientId,
-        clientName: client.name,
-        clientEmail: client.email,
-        orderTotal: order.total,
-        status: order.status,
-        timestamp: new Date().toISOString(),
-        items: order.items.map(item => ({
-          productName: item.productName,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          subtotal: item.subtotal
-        }))
-      };
-
-      // Log estruturado da notificação
-      console.log('='.repeat(80));
-      console.log(' NOTIFICAÇÃO: PAGAMENTO CONFIRMADO');
-      console.log('='.repeat(80));
-      console.log(`Cliente: ${client.name} (${client.email})`);
-      console.log(`Pedido: ${orderId}`);
-      console.log(`Valor Total: R$ ${order.total.toFixed(2)}`);
-      console.log(`Itens do Pedido:`);
-      order.items.forEach((item, index) => {
-        console.log(`   ${index + 1}. ${item.productName} - Qtd: ${item.quantity} - R$ ${item.unitPrice.toFixed(2)}`);
+      return await prisma.typePayment.create({
+        data: { name: name.trim() }
       });
-      console.log(`Data/Hora: ${notificationData.timestamp}`);
-      console.log(`Status: ${order.status}`);
-      console.log('='.repeat(80));
-      
-      return notificationData;
-      
     } catch (error) {
-      console.error('Erro ao enviar notificação:', error.message);
-      // Não falhar o pagamento por conta da notificação
-      return null;
+      // Verifica se é erro de constraint unique
+      if (error.code === 'P2002') {
+        const field = error.meta?.target?.[0];
+        if (field === 'name') {
+          throw createError(409, 'Já existe um tipo de pagamento com esse nome');
+        }
+        throw createError(409, 'Dados duplicados encontrados');
+      }
+      // Re-lança outros erros
+      throw error;
     }
   }
 };

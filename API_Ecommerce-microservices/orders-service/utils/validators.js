@@ -10,13 +10,12 @@ function validateOrderPayload(payload) {
   if (!payload.clientId || !isNonEmptyString(payload.clientId))
     throw createError(400, 'Client ID is required');
     
-  // Validar cada item do pedido (apenas productId e quantity são necessários)
+  // Validar cada item do pedido
   payload.items.forEach((item, index) => {
     if (!item.productId || !isNonEmptyString(item.productId))
       throw createError(400, `Item ${index + 1}: Product ID is required`);
     if (!Number.isInteger(item.quantity) || item.quantity <= 0)
       throw createError(400, `Item ${index + 1}: Quantity must be a positive integer`);
-    // productName e unitPrice serão buscados do Products Service
   });
 }
 

@@ -18,7 +18,9 @@ module.exports = {
   },
   create: async (req, res, next) => {
     try {
-      const order = await service.create(req.body);
+      // Permitir que o body traga payments junto com os dados do pedido
+      const { payments, ...orderPayload } = req.body;
+      const order = await service.create(orderPayload, payments);
       res.status(201).json(order);
     } catch (err) {
       next(err);

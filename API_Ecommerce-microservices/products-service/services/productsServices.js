@@ -8,36 +8,98 @@ module.exports = {
   obtain: (id) => prisma.product.findUnique({ where: { id, isDeleted: false } }),
   create: async (payload) => {
     validateProductPayload(payload);
-    return prisma.product.create({ data: payload });
+    try {
+      return await prisma.product.create({ data: payload });
+    } catch (error) {
+      // Verifica se é erro de constraint unique
+      if (error.code === 'P2002') {
+        const field = error.meta?.target?.[0];
+        if (field === 'name') {
+          throw createError(409, 'Já existe um produto com esse nome');
+        }
+        throw createError(409, 'Dados duplicados encontrados');
+      }
+      // Re-lança outros erros
+      throw error;
+    }
   },
   update: async (id, payload) => {
     // Remove stock from updateable fields - now handled by specific endpoint
     const { stock, ...updatePayload } = payload;
     validateProductUpdatePayload(updatePayload);
     
-    const updated = await prisma.product.update({ 
-      where: { id, isDeleted: false }, 
-      data: updatePayload 
-    });
-    if (!updated) throw createError(404, 'Product not found!');
-    return updated;
+    try {
+      const updated = await prisma.product.update({ 
+        where: { id, isDeleted: false }, 
+        data: updatePayload 
+      });
+      if (!updated) throw createError(404, 'Product not found!');
+      return updated;
+    } catch (error) {
+      // Verifica se é erro de constraint unique
+      if (error.code === 'P2002') {
+        const field = error.meta?.target?.[0];
+        if (field === 'name') {
+          throw createError(409, 'Já existe um produto com esse nome');
+        }
+        throw createError(409, 'Dados duplicados encontrados');
+      }
+      // Verifica se é erro de registro não encontrado
+      if (error.code === 'P2025') {
+        throw createError(404, 'Product not found!');
+      }
+      // Re-lança outros erros
+      throw error;
+    }
   },
   remove: async (id) => {
-    const deleted = await prisma.product.update({ 
-      where: { id }, 
-      data: { isDeleted: true }
-    });
-    if (!deleted) throw createError(404, 'Product not found!');
-    return { message: 'Product deleted successfully' };
+    try {
+      const deleted = await prisma.product.update({ 
+        where: { id }, 
+        data: { isDeleted: true }
+      });
+      if (!deleted) throw createError(404, 'Product not found!');
+      return { message: 'Product deleted successfully' };
+    } catch (error) {
+      // Verifica se é erro de registro não encontrado
+      if (error.code === 'P2025') {
+        throw createError(404, 'Product not found!');
+      }
+      // Re-lança outros erros
+      throw error;
+    }
   },
   // Specific method for stock updates
-  updateStock: async (id, stock) => {
+  updateStock: async (id, stockChange) => {
+    // Buscar o produto atual
+    const currentProduct = await prisma.product.findUnique({
+      where: { id, isDeleted: false }
+    });
+    
+    if (!currentProduct) {
+      throw createError(404, 'Product not found!');
+    }
+    
+    // Calcular novo estoque
+    const newStock = currentProduct.stock + stockChange;
+    
+    // Verificar se o estoque não ficará negativo
+    if (newStock < 0) {
+      throw createError(400, `Cannot decrement stock. Current: ${currentProduct.stock}, Requested change: ${stockChange}, Result would be: ${newStock}`);
+    }
+    
+    // Atualizar o estoque
     const updated = await prisma.product.update({
       where: { id, isDeleted: false },
-      data: { stock }
+      data: { stock: newStock }
     });
-    if (!updated) throw createError(404, 'Product not found!');
-    return updated;
+    
+    return {
+      ...updated,
+      previousStock: currentProduct.stock,
+      stockChange: stockChange,
+      newStock: newStock
+    };
   },
   // Method to check and reserve stock for orders
   checkAndReserveStock: async (products) => {
