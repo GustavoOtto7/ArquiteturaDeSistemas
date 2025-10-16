@@ -43,7 +43,6 @@ module.exports = {
         if (product.stock < item.quantity) {
           throw createError(400, `Insufficient stock for product ${product.name}. Available: ${product.stock}, Required: ${item.quantity}`);
         }
-
         // Criar item enriquecido com informações do produto
         const enrichedItem = {
           productId: item.productId,
@@ -52,7 +51,6 @@ module.exports = {
           unitPrice: product.price,
           subtotal: product.price * item.quantity
         };
-
         enrichedItems.push(enrichedItem);
         total += enrichedItem.subtotal;
       }
@@ -63,7 +61,6 @@ module.exports = {
       }
       throw createError(500, 'Error fetching product information');
     }
-
     // 3. Reservar estoque dos produtos
     try {
       const stockCheckPayload = {
@@ -85,7 +82,6 @@ module.exports = {
       }
       throw createError(500, 'Error checking stock');
     }
-
     // 4. Criar o pedido com os itens enriquecidos
     const orderData = {
       clientId: payload.clientId,
