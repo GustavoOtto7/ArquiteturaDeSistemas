@@ -1,3 +1,4 @@
+services:
   # Notification Service
   notification-service:
     build: ./notification-service
@@ -5,16 +6,20 @@
     restart: always
     environment:
       PORT: 3005
+      RABBITMQ_URL: amqp://admin:admin@rabbitmq:5672
     ports:
       - "3005:3005"
     networks:
       - ecommerce_network
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
     healthcheck:
       test: ["CMD-SHELL", "curl -f http://localhost:3005/health || exit 1"]
       interval: 30s
       timeout: 10s
       retries: 3
-services:
+
   # Products Database
   products-db:
     image: postgres:15
@@ -154,6 +159,7 @@ services:
       PORT: 3003
       CLIENTS_SERVICE_URL: "http://clients-service:3002"
       PRODUCTS_SERVICE_URL: "http://products-service:3001"
+      RABBITMQ_URL: amqp://admin:admin@rabbitmq:5672
     ports:
       - "3003:3003"
     depends_on:
@@ -162,6 +168,8 @@ services:
       products-service:
         condition: service_healthy
       clients-service:
+        condition: service_healthy
+      rabbitmq:
         condition: service_healthy
     networks:
       - ecommerce_network
@@ -181,6 +189,7 @@ services:
       PORT: 3004
       ORDERS_SERVICE_URL: "http://orders-service:3003"
       CLIENTS_SERVICE_URL: "http://clients-service:3002"
+      NOTIFICATION_SERVICE_URL: "http://notification-service:3005"
     ports:
       - "3004:3004"
     depends_on:
@@ -198,11 +207,79 @@ services:
       timeout: 10s
       retries: 3
 
+# === INFRA DE MONITORAMENTO ===
+  influxdb:
+    image: influxdb:1.8
+    container_name: influxdb
+    restart: always
+    ports:
+      - "8086:8086"
+    environment:
+      - INFLUXDB_DB=k6payments
+      - INFLUXDB_HTTP_AUTH_ENABLED=false
+    volumes:
+      - influxdb_data:/var/lib/influxdb
+      - ./influxdb-init/init-influxdb.sh:/docker-entrypoint-initdb.d/init-influxdb.sh
+    networks:
+      - ecommerce_network    # Adiciona a rede aqui
+
+  grafana:
+    image: grafana/grafana:10.2.3
+    container_name: grafana
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    depends_on:
+      - influxdb
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - ecommerce_network    # Adiciona a rede aqui
+
+  # === K6 ===
+  k6:
+    image: grafana/k6:latest
+    container_name: k6
+    depends_on:
+      - influxdb
+      - payments-service
+      - orders-service
+    volumes:
+      - ./k6-scripts:/scripts
+    networks:
+      - ecommerce_network
+
+  #RabbitMQ
+  rabbitmq:
+    image: rabbitmq:3.9-management
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin 
+      - RABBITMQ_DEFAULT_PASS=admin
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+    networks:
+      - ecommerce_network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
 volumes:
   products_data:
   clients_data:
   payments_data:
   orders_data:
+  influxdb_data:
+  grafana_data:
+  rabbitmq_data:
 
 networks:
   ecommerce_network:

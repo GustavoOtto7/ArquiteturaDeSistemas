@@ -2,11 +2,24 @@ const { Order, Status } = require('../models/Order');
 const { validateOrderPayload } = require('../utils/validators');
 const { createError } = require('../utils/errors');
 const axios = require('../utils/axios-config');
+const { RabbitMQClient, EVENTS } = require('../shared/rabbitmq-client');
 
 const CLIENTS_SERVICE_URL = process.env.CLIENTS_SERVICE_URL || 'http://localhost:3002';
 const PRODUCTS_SERVICE_URL = process.env.PRODUCTS_SERVICE_URL || 'http://localhost:3001';
 
+// Inicializa cliente RabbitMQ para publicação de eventos
+let rabbitMQClient = null;
+
+/**
+ * Define a instância do cliente RabbitMQ
+ * @param {RabbitMQClient} client - Instância do cliente RabbitMQ
+ */
+const setRabbitMQClient = (client) => {
+  rabbitMQClient = client;
+};
+
 module.exports = {
+  setRabbitMQClient,
   list: () => Order.find({ isDeleted: false }),
   obtain: (id) => Order.findOne({ _id: id, isDeleted: false }),
   create: async (payload, payments) => {
@@ -93,7 +106,25 @@ module.exports = {
     const order = new Order(orderData);
     const savedOrder = await order.save();
 
-    // 5. Se houver pagamentos, processar via payments-service
+    // 5. EVENTO: Publicar evento ORDER_CREATED para notificar outros serviços
+    // Este evento será consumido pelo notification-service para enviar notificações
+    if (rabbitMQClient) {
+      try {
+        await rabbitMQClient.publishEvent(EVENTS.ORDER_CREATED, {
+          orderId: savedOrder._id.toString(),
+          clientId: savedOrder.clientId,
+          total: savedOrder.total,
+          status: savedOrder.status,
+          itemsCount: savedOrder.items.length,
+          createdAt: savedOrder.createdAt
+        });
+      } catch (error) {
+        console.error('Erro ao publicar evento ORDER_CREATED:', error);
+        // Não interrompe o fluxo se o evento não puder ser publicado
+      }
+    }
+
+    // 6. Se houver pagamentos, processar via payments-service
     if (payments && Array.isArray(payments) && payments.length > 0) {
       try {
         // O payments-service espera: { payments: [{typePaymentId, amount}] }
@@ -131,6 +162,12 @@ module.exports = {
     });
   },
   
+  /**
+   * Atualiza o status do pedido e publica evento correspondente
+   * @param {string} orderId - ID do pedido
+   * @param {string} statusName - Novo status do pedido
+   * @returns {Object} Pedido atualizado
+   */
   updateStatus: async (orderId, statusName) => {
     const updated = await Order.findOneAndUpdate(
       { _id: orderId, isDeleted: false },
@@ -139,6 +176,47 @@ module.exports = {
     );
     
     if (!updated) throw createError(404, 'Order not found');
+
+    // EVENTO: Publicar evento baseado no novo status do pedido
+    if (rabbitMQClient) {
+      try {
+        let eventType = null;
+
+        // Mapear status para eventos apropriados
+        if (statusName === 'PAGO') {
+          eventType = EVENTS.ORDER_PAID;
+        } else if (statusName === 'FALHA NO PAGAMENTO' || statusName === 'CANCELADO') {
+          eventType = EVENTS.ORDER_FAILED;
+        }
+
+        // Se há um evento correspondente, publicar
+        if (eventType) {
+          // 1. Buscar informações do cliente para enviar nome
+          let clientName = 'Cliente';
+          try {
+            const clientResponse = await axios.get(
+              `${CLIENTS_SERVICE_URL}/v1/clients/${updated.clientId}`
+            );
+            clientName = clientResponse.data.name || 'Cliente';
+          } catch (error) {
+            console.warn('⚠️ Não foi possível buscar nome do cliente, usando padrão');
+          }
+
+          // 2. Publicar evento com nome do cliente
+          await rabbitMQClient.publishEvent(eventType, {
+            orderId: updated._id.toString(),
+            clientId: updated.clientId,
+            clientName: clientName, // ✅ NOVO: Nome do cliente
+            status: updated.status,
+            total: updated.total,
+            updatedAt: updated.updatedAt
+          });
+        }
+      } catch (error) {
+        console.error(`Erro ao publicar evento de status para pedido ${orderId}:`, error);
+      }
+    }
+
     return updated;
   }
 };
