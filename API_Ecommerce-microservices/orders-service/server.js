@@ -2,6 +2,7 @@ const express = require('express');
 const mongoose = require('mongoose');
 const ordersRoutes = require('./routes/ordersRoutes');
 const { RabbitMQClient } = require('./shared/rabbitmq-client');
+const { KafkaClient } = require('./shared/kafka-client');
 const ordersServices = require('./services/ordersServices');
 
 const app = express();
@@ -9,6 +10,9 @@ app.use(express.json());
 
 // Instância do cliente RabbitMQ para publicar eventos
 let rabbitMQClient = null;
+
+// Instância do cliente Kafka para publicar eventos
+let kafkaClient = null;
 
 // Connect to MongoDB
 const MONGODB_URL = process.env.MONGODB_URL || 'mongodb://admin:password@localhost:27017/orders_db?authSource=admin';
@@ -36,7 +40,22 @@ async function initializeRabbitMQ() {
   }
 }
 
+// Inicializar Kafka
+async function initializeKafka() {
+  try {
+    kafkaClient = new KafkaClient();
+    await kafkaClient.connect();
+    // Passar a instância do Kafka para o serviço
+    ordersServices.setKafkaClient(kafkaClient);
+    console.log('✓ Kafka inicializado no Orders Service');
+  } catch (error) {
+    console.error('✗ Erro ao inicializar Kafka:', error);
+    // Continuar mesmo sem Kafka, funcionará sem eventos
+  }
+}
+
 initializeRabbitMQ();
+initializeKafka();
 
 app.use('/v1/orders', ordersRoutes);
 
@@ -45,7 +64,8 @@ app.get('/health', (req, res) => res.json({
   status: 'ok', 
   uptime: process.uptime(),
   database: 'MongoDB',
-  rabbitMQ: rabbitMQClient?.isConnected ? 'connected' : 'disconnected'
+  rabbitMQ: rabbitMQClient?.isConnected ? 'connected' : 'disconnected',
+  kafka: kafkaClient?.isConnected ? 'connected' : 'disconnected'
 }));
 
 app.get('/', (req, res) => res.send('Orders Service - Use /v1/orders to interact with orders.'));
@@ -64,11 +84,14 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 3003;
 const server = app.listen(PORT, () => console.log(`Orders Service running on http://localhost:${PORT}`));
 
-// Graceful shutdown para desconectar RabbitMQ
+// Graceful shutdown para desconectar RabbitMQ e Kafka
 process.on('SIGTERM', async () => {
   console.log('SIGTERM recebido, encerrando gracefully...');
   if (rabbitMQClient) {
     await rabbitMQClient.disconnect();
+  }
+  if (kafkaClient) {
+    await kafkaClient.disconnect();
   }
   server.close(() => {
     console.log('Servidor encerrado');

@@ -3,12 +3,16 @@ const { validateOrderPayload } = require('../utils/validators');
 const { createError } = require('../utils/errors');
 const axios = require('../utils/axios-config');
 const { RabbitMQClient, EVENTS } = require('../shared/rabbitmq-client');
+const { KafkaClient, TOPICS } = require('../shared/kafka-client');
 
 const CLIENTS_SERVICE_URL = process.env.CLIENTS_SERVICE_URL || 'http://localhost:3002';
 const PRODUCTS_SERVICE_URL = process.env.PRODUCTS_SERVICE_URL || 'http://localhost:3001';
 
 // Inicializa cliente RabbitMQ para publicação de eventos
 let rabbitMQClient = null;
+
+// Inicializa cliente Kafka para publicação de eventos
+let kafkaClient = null;
 
 /**
  * Define a instância do cliente RabbitMQ
@@ -18,7 +22,17 @@ const setRabbitMQClient = (client) => {
   rabbitMQClient = client;
 };
 
+/**
+ * Define a instância do cliente Kafka
+ * @param {KafkaClient} client - Instância do cliente Kafka
+ */
+const setKafkaClient = (client) => {
+  kafkaClient = client;
+};
+
 module.exports = {
+  setRabbitMQClient,
+  setKafkaClient,
   setRabbitMQClient,
   list: () => Order.find({ isDeleted: false }),
   obtain: (id) => Order.findOne({ _id: id, isDeleted: false }),
@@ -107,7 +121,7 @@ module.exports = {
     const savedOrder = await order.save();
 
     // 5. EVENTO: Publicar evento ORDER_CREATED para notificar outros serviços
-    // Este evento será consumido pelo notification-service para enviar notificações
+    // Este evento será consumido pelo notification-service (RabbitMQ) e pelo payments-service (Kafka)
     if (rabbitMQClient) {
       try {
         await rabbitMQClient.publishEvent(EVENTS.ORDER_CREATED, {
@@ -119,7 +133,25 @@ module.exports = {
           createdAt: savedOrder.createdAt
         });
       } catch (error) {
-        console.error('Erro ao publicar evento ORDER_CREATED:', error);
+        console.error('Erro ao publicar evento ORDER_CREATED no RabbitMQ:', error);
+        // Não interrompe o fluxo se o evento não puder ser publicado
+      }
+    }
+
+    // 5b. EVENTO KAFKA: Publicar no Kafka também para o Payments Service consumir
+    if (kafkaClient) {
+      try {
+        await kafkaClient.publishEvent(TOPICS.ORDERS_CREATED, {
+          orderId: savedOrder._id.toString(),
+          clientId: savedOrder.clientId,
+          total: savedOrder.total,
+          status: savedOrder.status,
+          items: enrichedItems,
+          itemsCount: savedOrder.items.length,
+          createdAt: savedOrder.createdAt
+        });
+      } catch (error) {
+        console.error('Erro ao publicar evento ORDER_CREATED no Kafka:', error);
         // Não interrompe o fluxo se o evento não puder ser publicado
       }
     }
@@ -202,18 +234,58 @@ module.exports = {
             console.warn('⚠️ Não foi possível buscar nome do cliente, usando padrão');
           }
 
-          // 2. Publicar evento com nome do cliente
+          // 2. Publicar evento com nome do cliente (RabbitMQ)
           await rabbitMQClient.publishEvent(eventType, {
             orderId: updated._id.toString(),
             clientId: updated.clientId,
-            clientName: clientName, // ✅ NOVO: Nome do cliente
+            clientName: clientName,
             status: updated.status,
             total: updated.total,
             updatedAt: updated.updatedAt
           });
         }
       } catch (error) {
-        console.error(`Erro ao publicar evento de status para pedido ${orderId}:`, error);
+        console.error(`Erro ao publicar evento de status para pedido ${orderId} no RabbitMQ:`, error);
+      }
+    }
+
+    // EVENTO KAFKA: Publicar no Kafka também para manter ambos brokers sincronizados
+    if (kafkaClient) {
+      try {
+        let topicType = null;
+
+        // Mapear status para tópicos Kafka apropriados
+        if (statusName === 'PAGO') {
+          topicType = TOPICS.ORDERS_PAID;
+        } else if (statusName === 'FALHA NO PAGAMENTO' || statusName === 'CANCELADO') {
+          topicType = TOPICS.ORDERS_FAILED;
+        }
+
+        // Se há um tópico correspondente, publicar
+        if (topicType) {
+          // 1. Buscar informações do cliente para enviar nome
+          let clientName = 'Cliente';
+          try {
+            const clientResponse = await axios.get(
+              `${CLIENTS_SERVICE_URL}/v1/clients/${updated.clientId}`
+            );
+            clientName = clientResponse.data.name || 'Cliente';
+          } catch (error) {
+            console.warn('⚠️ Não foi possível buscar nome do cliente, usando padrão');
+          }
+
+          // 2. Publicar evento no Kafka
+          await kafkaClient.publishEvent(topicType, {
+            orderId: updated._id.toString(),
+            clientId: updated.clientId,
+            clientName: clientName,
+            status: updated.status,
+            total: updated.total,
+            updatedAt: updated.updatedAt
+          });
+        }
+      } catch (error) {
+        console.error(`Erro ao publicar evento de status para pedido ${orderId} no Kafka:`, error);
       }
     }
 
