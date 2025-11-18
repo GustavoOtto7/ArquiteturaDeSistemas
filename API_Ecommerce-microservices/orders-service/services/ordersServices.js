@@ -145,7 +145,6 @@ module.exports = {
           orderId: savedOrder._id.toString(),
           clientId: savedOrder.clientId,
           total: savedOrder.total,
-          status: savedOrder.status,
           items: enrichedItems,
           itemsCount: savedOrder.items.length,
           createdAt: savedOrder.createdAt
