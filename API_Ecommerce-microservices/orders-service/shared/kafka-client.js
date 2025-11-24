@@ -56,11 +56,7 @@ class KafkaClient {
     try {
       const message = {
         key: data.orderId ? data.orderId.toString() : null,
-        value: JSON.stringify({
-          type: topic,
-          timestamp: new Date().toISOString(),
-          data,
-        }),
+        value: JSON.stringify(data),
         headers: {
           'content-type': 'application/json',
         },

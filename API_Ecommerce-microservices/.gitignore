@@ -105,3 +105,6 @@ Desktop.ini
 # Prisma
 */prisma/migrations/
 prisma/migrations/
+
+# Submodules
+eda/
